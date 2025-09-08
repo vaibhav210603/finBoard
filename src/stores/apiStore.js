@@ -73,7 +73,17 @@ const useApiStore = create((set, get) => ({
       return true;
     }
     
-    return limit.count < limit.requests;
+    const isWithinLimit = limit.count < limit.requests;
+    
+    // If rate limit is exceeded, redirect to API limit page
+    if (!isWithinLimit && typeof window !== 'undefined') {
+      // Check if we're already on the API limit page to avoid infinite redirects
+      if (window.location.pathname !== '/api-limit-exceeded') {
+        window.location.href = '/api-limit-exceeded';
+      }
+    }
+    
+    return isWithinLimit;
   },
   
   incrementRateLimit: (provider) => {

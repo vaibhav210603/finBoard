@@ -22,15 +22,20 @@ const useRealTimeData = (widgetId, fetchFunction, interval = 30000) => {
     // Check cache first unless force refresh
     if (!force) {
       const cachedData = getCachedData(cacheKey);
-      if (cachedData) return cachedData;
+      if (cachedData) {
+        console.log(`Widget cache hit for ${cacheKey}`);
+        return cachedData;
+      }
     }
     
     try {
       setWidgetLoading(widgetId, true);
+      console.log(`Widget cache miss for ${cacheKey}, calling API...`);
       const data = await fetchFunction();
       
       if (data) {
         setCachedData(cacheKey, data, interval);
+        console.log(`Widget data cached for ${cacheKey} with TTL ${interval}ms`);
       }
       
       return data;
@@ -47,7 +52,8 @@ const useRealTimeData = (widgetId, fetchFunction, interval = 30000) => {
     
     intervalRef.current = setInterval(() => {
       if (isActive) {
-        fetchData(true);
+        // Don't force refresh - let the cache system decide
+        fetchData(false);
       }
     }, interval);
   }, [fetchData, interval, isActive]);
@@ -70,8 +76,8 @@ const useRealTimeData = (widgetId, fetchFunction, interval = 30000) => {
         stopPolling();
       } else if (isActive) {
         startPolling();
-        // Use a timeout to avoid immediate fetch on visibility change
-        setTimeout(() => fetchData(true), 100);
+        // Check cache first, don't force refresh
+        setTimeout(() => fetchData(false), 100);
       }
     };
     

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Plus, Moon, Sun, Download, Upload, Trash2, Settings } from 'lucide-react';
+import { Plus, Moon, Sun, Download, Upload, Trash2, Settings, Database } from 'lucide-react';
 import useDashboardStore from '../../stores/dashboardStore';
 import AddWidgetModal from '../modals/AddWidgetModal';
+import CacheManager from '../common/CacheManager';
 
 const Header = () => {
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showCacheManager, setShowCacheManager] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const { 
     theme, 
@@ -121,6 +123,16 @@ const Header = () => {
               </button>
             </div>
             
+            {/* Cache Manager */}
+            <button
+              onClick={() => setShowCacheManager(true)}
+              className="btn-secondary"
+              title="Manage API cache"
+            >
+              <Database className="w-4 h-4" />
+              <span className="hidden sm:inline">Cache</span>
+            </button>
+            
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -170,6 +182,11 @@ const Header = () => {
       <AddWidgetModal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
+      />
+      
+      <CacheManager
+        isOpen={showCacheManager}
+        onClose={() => setShowCacheManager(false)}
       />
     </>
   );

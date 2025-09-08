@@ -30,6 +30,10 @@ class ApiService {
         message = 'Access denied. Please check your API key and permissions.';
       } else if (error.response.status === 429) {
         message = 'Rate limit exceeded. Please wait before making more requests.';
+        // Redirect to API limit page if in browser
+        if (typeof window !== 'undefined') {
+          window.location.href = '/api-limit-exceeded';
+        }
       } else if (error.response.status === 500) {
         message = 'API server error. Please try again later.';
       }
@@ -58,13 +62,20 @@ class ApiService {
     const apiStore = useApiStore.getState();
     const dashboardStore = useDashboardStore.getState();
     
-    // Check if we have cached data
-    const cacheKey = `${provider}_${endpoint}_${JSON.stringify(args)}`;
-    const cachedData = dashboardStore.getCachedData(cacheKey);
+    // Create cache key with normalized arguments
+    const normalizedArgs = args.map(arg => 
+      typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+    );
+    const cacheKey = `${provider}_${endpoint}_${normalizedArgs.join('_')}`;
     
+    // Check if we have cached data
+    const cachedData = dashboardStore.getCachedData(cacheKey);
     if (cachedData) {
+      console.log(`✅ Cache hit for ${cacheKey}`);
       return cachedData;
     }
+    
+    console.log(`❌ Cache miss for ${cacheKey}, making API call...`);
     
     try {
       const endpointConfig = apiStore.getEndpoint(provider, endpoint, ...args);
@@ -94,13 +105,64 @@ class ApiService {
       
       const data = await requestPromise;
       
-      // Cache the successful response
-      dashboardStore.setCachedData(cacheKey, data, 300000); // 5 minutes
+      // Determine cache TTL based on data type and provider
+      const cacheTTL = this.getCacheTTL(provider, endpoint, data);
+      
+      // Cache the successful response with metadata
+      const cacheData = {
+        data,
+        timestamp: Date.now(),
+        provider,
+        endpoint,
+        args: normalizedArgs,
+        ttl: cacheTTL
+      };
+      
+      dashboardStore.setCachedData(cacheKey, cacheData, cacheTTL);
+      console.log(`💾 Cached data for ${cacheKey} with TTL ${cacheTTL}ms`);
       
       return data;
     } catch (error) {
+      // Try to return stale cache data if available
+      const staleData = dashboardStore.getStaleCachedData(cacheKey);
+      if (staleData) {
+        console.log(`Returning stale cache data for ${cacheKey}`);
+        return staleData;
+      }
+      
       throw this.handleError(error);
     }
+  }
+  
+  // Determine appropriate cache TTL based on data type and provider
+  getCacheTTL(provider, endpoint, data) {
+    // Base TTL by provider
+    const baseTTL = {
+      alphaVantage: 300000,  // 5 minutes
+      finnhub: 60000,        // 1 minute
+      indianAPI: 120000      // 2 minutes
+    };
+    
+    // Adjust TTL based on endpoint type
+    const endpointMultipliers = {
+      quote: 0.5,           // Real-time data, shorter cache
+      intraday: 0.3,        // Very short for intraday
+      daily: 2,             // Historical data can be cached longer
+      historical: 3,        // Historical data can be cached much longer
+      candles: 1.5,         // Candlestick data
+      profile: 10,          // Company profiles rarely change
+      companyInfo: 10,      // Company info rarely changes
+      topGainersLosers: 0.2 // Market data changes frequently
+    };
+    
+    let ttl = baseTTL[provider] || 300000;
+    const multiplier = endpointMultipliers[endpoint] || 1;
+    ttl = Math.floor(ttl * multiplier);
+    
+    // Ensure minimum and maximum TTL bounds
+    ttl = Math.max(30000, Math.min(ttl, 3600000)); // 30 seconds to 1 hour
+    
+    return ttl;
   }
   
   // Alpha Vantage API methods

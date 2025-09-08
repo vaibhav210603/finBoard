@@ -99,7 +99,7 @@ const FinanceCardWidget = ({ widget }) => {
     }, 100);
     
     return () => clearTimeout(timeoutId);
-  }, [cardType, symbols.join(','), displayLimit, widget.id, widget.config?.provider, widget.config?.endpoint, widget.config?.exchange]); // Use specific dependencies
+  }, [cardType, symbols.join(','), displayLimit, widget.id, widget.config?.provider, widget.config?.endpoint, widget.config?.exchange, fetchData]); // Include fetchData in dependencies
   
   const formatCurrency = (value) => {
     // Handle undefined, null, or non-numeric values

@@ -43,6 +43,27 @@ const useDashboardStore = create(
       dataCache: {},
       cacheExpiry: {},
       
+      // Initialize cache cleanup on startup
+      initializeCache: () => {
+        const { dataCache, cacheExpiry } = get();
+        const now = Date.now();
+        const newDataCache = { ...dataCache };
+        const newCacheExpiry = { ...cacheExpiry };
+        
+        // Remove expired entries
+        Object.keys(cacheExpiry).forEach(key => {
+          if (cacheExpiry[key] && now > cacheExpiry[key]) {
+            delete newDataCache[key];
+            delete newCacheExpiry[key];
+          }
+        });
+        
+        set({
+          dataCache: newDataCache,
+          cacheExpiry: newCacheExpiry,
+        });
+      },
+      
       // Loading states
       loadingWidgets: [],
       
@@ -302,26 +323,176 @@ const useDashboardStore = create(
           return null;
         }
         
-        return dataCache[key] || null;
+        const cachedItem = dataCache[key];
+        if (cachedItem && typeof cachedItem === 'object' && cachedItem.data) {
+          return cachedItem.data;
+        }
+        
+        return cachedItem || null;
+      },
+      
+      // Get stale cached data (expired but still available)
+      getStaleCachedData: (key) => {
+        const { dataCache, cacheExpiry } = get();
+        const expiry = cacheExpiry[key];
+        const cachedItem = dataCache[key];
+        
+        // If data exists but is expired, return it as stale
+        if (cachedItem && expiry && Date.now() > expiry) {
+          if (typeof cachedItem === 'object' && cachedItem.data) {
+            return cachedItem.data;
+          }
+          return cachedItem;
+        }
+        
+        return null;
+      },
+      
+      // Get cache metadata
+      getCacheMetadata: (key) => {
+        const { dataCache, cacheExpiry } = get();
+        const cachedItem = dataCache[key];
+        const expiry = cacheExpiry[key];
+        
+        if (!cachedItem) return null;
+        
+        return {
+          timestamp: cachedItem.timestamp || null,
+          provider: cachedItem.provider || null,
+          endpoint: cachedItem.endpoint || null,
+          args: cachedItem.args || null,
+          ttl: cachedItem.ttl || null,
+          expiresAt: expiry || null,
+          isExpired: expiry ? Date.now() > expiry : false,
+          age: cachedItem.timestamp ? Date.now() - cachedItem.timestamp : null
+        };
       },
       
       setCachedData: (key, data, ttl = 300000) => { // 5 minutes default TTL
-        set((state) => ({
-          dataCache: {
-            ...state.dataCache,
-            [key]: data,
-          },
-          cacheExpiry: {
-            ...state.cacheExpiry,
-            [key]: Date.now() + ttl,
-          },
-        }));
+        const expiryTime = Date.now() + ttl;
+        
+        set((state) => {
+          // Clean up expired entries before adding new data
+          const now = Date.now();
+          const newDataCache = { ...state.dataCache };
+          const newCacheExpiry = { ...state.cacheExpiry };
+          
+          // Remove expired entries
+          Object.keys(newCacheExpiry).forEach(cacheKey => {
+            if (newCacheExpiry[cacheKey] && now > newCacheExpiry[cacheKey]) {
+              delete newDataCache[cacheKey];
+              delete newCacheExpiry[cacheKey];
+            }
+          });
+          
+          // Add new data
+          newDataCache[key] = data;
+          newCacheExpiry[key] = expiryTime;
+          
+          // Limit cache size to prevent localStorage from getting too large
+          const maxCacheEntries = 50;
+          const cacheKeys = Object.keys(newDataCache);
+          if (cacheKeys.length > maxCacheEntries) {
+            // Remove oldest entries (by expiry time)
+            const sortedKeys = cacheKeys.sort((a, b) => 
+              (newCacheExpiry[a] || 0) - (newCacheExpiry[b] || 0)
+            );
+            
+            const keysToRemove = sortedKeys.slice(0, cacheKeys.length - maxCacheEntries);
+            keysToRemove.forEach(keyToRemove => {
+              delete newDataCache[keyToRemove];
+              delete newCacheExpiry[keyToRemove];
+            });
+          }
+          
+          return {
+            dataCache: newDataCache,
+            cacheExpiry: newCacheExpiry,
+          };
+        });
       },
       
       clearCache: () => {
         set({
           dataCache: {},
           cacheExpiry: {},
+        });
+      },
+      
+      // Clear expired cache entries
+      clearExpiredCache: () => {
+        const { dataCache, cacheExpiry } = get();
+        const now = Date.now();
+        const newDataCache = { ...dataCache };
+        const newCacheExpiry = { ...cacheExpiry };
+        
+        Object.keys(cacheExpiry).forEach(key => {
+          if (cacheExpiry[key] && now > cacheExpiry[key]) {
+            delete newDataCache[key];
+            delete newCacheExpiry[key];
+          }
+        });
+        
+        set({
+          dataCache: newDataCache,
+          cacheExpiry: newCacheExpiry,
+        });
+      },
+      
+      // Get cache statistics
+      getCacheStats: () => {
+        const { dataCache, cacheExpiry } = get();
+        const now = Date.now();
+        let totalEntries = 0;
+        let expiredEntries = 0;
+        let totalSize = 0;
+        const providerStats = {};
+        
+        Object.keys(dataCache).forEach(key => {
+          totalEntries++;
+          const item = dataCache[key];
+          const expiry = cacheExpiry[key];
+          
+          if (expiry && now > expiry) {
+            expiredEntries++;
+          }
+          
+          // Estimate size (rough calculation)
+          totalSize += JSON.stringify(item).length;
+          
+          // Count by provider
+          if (item && typeof item === 'object' && item.provider) {
+            providerStats[item.provider] = (providerStats[item.provider] || 0) + 1;
+          }
+        });
+        
+        return {
+          totalEntries,
+          expiredEntries,
+          activeEntries: totalEntries - expiredEntries,
+          totalSize,
+          providerStats,
+          hitRate: 0 // This would need to be tracked separately
+        };
+      },
+      
+      // Clear cache by provider
+      clearCacheByProvider: (provider) => {
+        const { dataCache, cacheExpiry } = get();
+        const newDataCache = { ...dataCache };
+        const newCacheExpiry = { ...cacheExpiry };
+        
+        Object.keys(dataCache).forEach(key => {
+          const item = dataCache[key];
+          if (item && typeof item === 'object' && item.provider === provider) {
+            delete newDataCache[key];
+            delete newCacheExpiry[key];
+          }
+        });
+        
+        set({
+          dataCache: newDataCache,
+          cacheExpiry: newCacheExpiry,
         });
       },
       
@@ -395,6 +566,8 @@ const useDashboardStore = create(
         widgets: state.widgets,
         layout: state.layout,
         theme: state.theme,
+        dataCache: state.dataCache,
+        cacheExpiry: state.cacheExpiry,
       }),
       // Use modern storage configuration with SSR safety
       storage: {

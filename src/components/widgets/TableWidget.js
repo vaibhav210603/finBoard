@@ -28,6 +28,8 @@ const TableWidget = ({ widget }) => {
       const provider = widget.config?.provider || 'alphaVantage';
       const endpoint = widget.config?.endpoint || 'quote';
       
+      console.log(`TableWidget: Fetching data for ${symbols.join(', ')} using ${provider}`);
+      
       const quotes = await Promise.allSettled(
         symbols.map(async (symbol) => {
           try {
@@ -98,7 +100,7 @@ const TableWidget = ({ widget }) => {
     }, 100);
     
     return () => clearTimeout(timeoutId);
-  }, [symbols.join(','), widget.id, widget.config?.provider, widget.config?.endpoint, widget.config?.exchange]); // Use specific dependencies instead of fetchData
+  }, [symbols.join(','), widget.id, widget.config?.provider, widget.config?.endpoint, widget.config?.exchange, fetchData]); // Include fetchData in dependencies
   
   // Filter and search data
   useEffect(() => {

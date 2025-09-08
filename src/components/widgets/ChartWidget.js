@@ -142,7 +142,7 @@ const ChartWidget = ({ widget }) => {
     }, 100);
     
     return () => clearTimeout(timeoutId);
-  }, [symbol, timeframe, widget.id, widget.config?.provider, widget.config?.endpoint, widget.config?.exchange]); // Use specific dependencies
+  }, [symbol, timeframe, widget.id, widget.config?.provider, widget.config?.endpoint, widget.config?.exchange, fetchData]); // Include fetchData in dependencies
   
   const chartStats = useMemo(() => {
     if (!data || data.length === 0) return null;
