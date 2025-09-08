@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Settings, RefreshCw, AlertCircle } from 'lucide-react';
+import { X, RefreshCw, AlertCircle } from 'lucide-react';
 import useDashboardStore from '../../stores/dashboardStore';
 
 const BaseWidget = ({ 
@@ -8,14 +8,11 @@ const BaseWidget = ({
   onRefresh, 
   isLoading = false, 
   error = null,
-  showSettings = true,
   className = ''
 }) => {
-  const { removeWidget, selectWidget, selectedWidget, updateWidget } = useDashboardStore();
+  const { removeWidget, updateWidget } = useDashboardStore();
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(widget.title || '');
-  
-  const isSelected = selectedWidget === widget.id;
   
   useEffect(() => {
     setTitle(widget.title || '');
@@ -28,10 +25,6 @@ const BaseWidget = ({
     }
   };
   
-  const handleSettings = (e) => {
-    e.stopPropagation();
-    selectWidget(widget.id);
-  };
   
   const handleRefresh = (e) => {
     e.stopPropagation();
@@ -64,8 +57,7 @@ const BaseWidget = ({
   
   return (
     <div 
-      className={`widget-container ${isSelected ? 'ring-2 ring-primary-500' : ''} ${className}`}
-      onClick={() => selectWidget(widget.id)}
+      className={`widget-container ${className}`}
     >
       {/* Widget Header */}
       <div className="widget-header">
@@ -120,16 +112,6 @@ const BaseWidget = ({
             </button>
           )}
           
-          {/* Settings button */}
-          {showSettings && (
-            <button
-              onClick={handleSettings}
-              className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded transition-colors"
-              title="Widget settings"
-            >
-              <Settings className="w-4 h-4" />
-            </button>
-          )}
           
           {/* Remove button */}
           <button
