@@ -18,7 +18,11 @@ const DashboardGrid = () => {
   const containerRef = useRef(null);
   
   const handleMouseDown = useCallback((e, widgetId) => {
-    if (e.target.closest('.widget-header')) {
+    // Check if the click is on the widget header but NOT on interactive elements
+    if (e.target.closest('.widget-header') && 
+        !e.target.closest('button') && 
+        !e.target.closest('input') &&
+        !e.target.closest('h3')) {
       e.preventDefault();
       setIsDragging(true);
       setDragging(true);
