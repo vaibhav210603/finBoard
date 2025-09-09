@@ -7,11 +7,6 @@ const useApiStore = create((set, get) => ({
     const finnhubKey = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
     const indianAPIKey = process.env.NEXT_PUBLIC_INDIAN_API_KEY;
     
-    // Debug logging
-    console.log('Environment variables check:');
-    console.log('NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY:', alphaVantageKey);
-    console.log('NEXT_PUBLIC_FINNHUB_API_KEY:', finnhubKey);
-    console.log('NEXT_PUBLIC_INDIAN_API_KEY:', indianAPIKey);
     
     return {
       alphaVantage: alphaVantageKey,
@@ -43,12 +38,6 @@ const useApiStore = create((set, get) => ({
   requestQueue: [],
   isProcessingQueue: false,
   
-  // Actions
-  updateApiKey: (provider, key) => {
-    // This function is kept for compatibility but environment variables
-    // should be set in .env.local file
-    console.warn('updateApiKey is deprecated. Set environment variables in .env.local file instead.');
-  },
   
   checkRateLimit: (provider) => {
     const { rateLimits } = get();

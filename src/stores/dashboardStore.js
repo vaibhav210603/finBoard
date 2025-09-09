@@ -308,7 +308,7 @@ const useDashboardStore = create(
       getCachedData: (key) => {
         const { dataCache, cacheExpiry } = get();
         const expiry = cacheExpiry[key];
-        
+         
         if (expiry && Date.now() > expiry) {
           set((state) => {
             const newDataCache = { ...state.dataCache };
@@ -560,6 +560,7 @@ const useDashboardStore = create(
         return get().widgets.filter(w => w.type === type);
       },
     }),
+
     {
       name: 'finance-dashboard-storage',
       partialize: (state) => ({

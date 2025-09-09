@@ -5,15 +5,15 @@ export const getApiConfig = () => ({
     apiKey: process.env.NEXT_PUBLIC_ALPHA_VANTAGE_API_KEY ,
     rateLimit: {
       requests: 5,
-      window: 60000, // 1 minute
+      window: 60000, 
     },
   },
   finnhub: {
-    baseUrl: process.env.NEXT_PUBLIC_FINNHUB_BASE_URL || 'https://finnhub.io/api/v1',
-    apiKey: process.env.NEXT_PUBLIC_FINNHUB_API_KEY || '',
+    baseUrl: process.env.NEXT_PUBLIC_FINNHUB_BASE_URL ,
+    apiKey: process.env.NEXT_PUBLIC_FINNHUB_API_KEY ,
     rateLimit: {
       requests: 60,
-      window: 60000, // 1 minute
+      window: 60000, 
     },
   },
 });
@@ -135,49 +135,4 @@ export const API_PROVIDER_CONFIGS = {
   }
 };
 
-// Default symbols for demo purposes
-export const DEFAULT_SYMBOLS = [
-  'AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 
-  'META', 'NVDA', 'NFLX', 'AMD', 'INTC'
-];
-
-// Sample data for when APIs are not configured
-export const SAMPLE_DATA = {
-  quote: {
-    symbol: 'DEMO',
-    price: 150.25,
-    change: 2.15,
-    changePercent: 1.45,
-    volume: 1234567,
-    previousClose: 148.10,
-    open: 149.80,
-    high: 151.20,
-    low: 148.95,
-    latestTradingDay: new Date().toISOString().split('T')[0],
-  },
-  timeSeries: Array.from({ length: 50 }, (_, i) => ({
-    timestamp: new Date(Date.now() - (49 - i) * 60 * 60 * 1000).toISOString(),
-    date: new Date(Date.now() - (49 - i) * 60 * 60 * 1000),
-    open: 148 + Math.random() * 6,
-    high: 149 + Math.random() * 6,
-    low: 147 + Math.random() * 6,
-    close: 148 + Math.random() * 6,
-    volume: Math.floor(Math.random() * 1000000) + 500000,
-  })),
-  topGainers: {
-    gainers: [
-      { symbol: 'DEMO1', price: 125.50, change: 8.25, changePercent: 7.03, volume: 2500000 },
-      { symbol: 'DEMO2', price: 89.75, change: 5.50, changePercent: 6.53, volume: 1800000 },
-      { symbol: 'DEMO3', price: 234.80, change: 12.30, changePercent: 5.53, volume: 950000 },
-    ],
-    losers: [
-      { symbol: 'DEMO4', price: 45.25, change: -3.75, changePercent: -7.65, volume: 3200000 },
-      { symbol: 'DEMO5', price: 167.90, change: -8.10, changePercent: -4.60, volume: 1100000 },
-    ],
-    mostActive: [
-      { symbol: 'DEMO6', price: 78.40, change: 1.20, changePercent: 1.55, volume: 8500000 },
-      { symbol: 'DEMO7', price: 156.70, change: -2.30, changePercent: -1.45, volume: 7200000 },
-    ],
-  },
-};
 
